@@ -184,10 +184,83 @@ h1, .brand {
             "photo"
             "details";
     }
+
     .hero-photo {
         max-width: 220px;
     }
+
     .social-links {
         justify-content: flex-start;
     }
+
+    .experience-section {
+        padding: 3rem 0;
+    }
+
+    .experience-card {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+        padding: 1.25rem;
+    }
+}
+
+.experience-section {
+    background-color: var(--line);
+    border-top: 1px solid var(--ink);
+    padding: 3rem 0 3rem;
+}
+
+.section-title {
+    margin-bottom: 2rem;
+    font-size: 2.5rem;
+}
+
+.timeline {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.experience-card {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 2rem;
+    align-items: center;
+    padding: 1.5rem;
+    background-color: var(--paper);
+    border: 1px solid var(--ink);
+}
+
+.card-main h3 {
+    font-family: "Space Grotesk", -apple-system, sans-serif;
+    font-size: 1.3rem;
+}
+
+.org-name {
+    margin-top: 0.7rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.work-date {
+    display: inline-block;
+    margin-top: 1rem;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--line);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.card-logo {
+    display: grid;
+    width: 4.5rem;
+    height: 4.5rem;
+    place-items: center;
+    background-color: #ffffff;
+    border: 1px solid var(--ink);
+}
+
+.card-logo img {
+    width: 72%;
+    height: 72%;
+    object-fit: contain;
 }
