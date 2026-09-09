@@ -31,6 +31,7 @@ h1, .brand {
     padding: 0 1.5rem;
 }
 
+/* Header */
 .site-header {
     border-bottom: 1px solid var(--line);
 }
@@ -60,6 +61,7 @@ h1, .brand {
     font-size: 0.95rem;
 }
 
+/* Hero Section (Index / Profile) */
 .hero {
     padding: 4.5rem 0 5rem;
 }
@@ -169,6 +171,62 @@ h1, .brand {
     border: 3px solid var(--ink);
 }
 
+/* Experience Section (Tutorial 02) */
+.experience-section {
+    padding: 4rem 0;
+    border-top: 1px solid var(--line);
+}
+
+.section-kicker {
+    color: var(--accent-dark);
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.experience-section h1 {
+    margin: 0.4rem 0 1.5rem;
+    font-size: 2rem;
+}
+
+.experience-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+}
+
+.experience-card {
+    padding: 1.25rem;
+    background-color: #fff;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+}
+
+.experience-category {
+    color: var(--accent-dark);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.experience-card h2 {
+    margin: 0.5rem 0;
+    font-size: 1.25rem;
+}
+
+.experience-description,
+.empty-state {
+    color: var(--text-muted);
+}
+
+.experience-status {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* Footer */
 .site-footer {
     padding: 1.5rem;
     color: var(--text-muted);
@@ -176,6 +234,7 @@ h1, .brand {
     border-top: 1px solid var(--line);
 }
 
+/* Responsive */
 @media (max-width: 600px) {
     .hero-grid {
         grid-template-columns: 1fr;
@@ -196,71 +255,4 @@ h1, .brand {
     .experience-section {
         padding: 3rem 0;
     }
-
-    .experience-card {
-        grid-template-columns: 1fr;
-        gap: 1.25rem;
-        padding: 1.25rem;
-    }
-}
-
-.experience-section {
-    background-color: var(--line);
-    border-top: 1px solid var(--ink);
-    padding: 3rem 0 3rem;
-}
-
-.section-title {
-    margin-bottom: 2rem;
-    font-size: 2.5rem;
-}
-
-.timeline {
-    display: grid;
-    gap: 1.5rem;
-}
-
-.experience-card {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 2rem;
-    align-items: center;
-    padding: 1.5rem;
-    background-color: var(--paper);
-    border: 1px solid var(--ink);
-}
-
-.card-main h3 {
-    font-family: "Space Grotesk", -apple-system, sans-serif;
-    font-size: 1.3rem;
-}
-
-.org-name {
-    margin-top: 0.7rem;
-    color: var(--text-muted);
-    font-size: 0.9rem;
-}
-
-.work-date {
-    display: inline-block;
-    margin-top: 1rem;
-    padding-top: 0.4rem;
-    border-top: 1px solid var(--line);
-    color: var(--text-muted);
-    font-size: 0.85rem;
-}
-
-.card-logo {
-    display: grid;
-    width: 4.5rem;
-    height: 4.5rem;
-    place-items: center;
-    background-color: #ffffff;
-    border: 1px solid var(--ink);
-}
-
-.card-logo img {
-    width: 72%;
-    height: 72%;
-    object-fit: contain;
 }
