@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.core import serializers
 from main.models import Experience, Interest
-from main.forms import InterestForm
+from main.forms import InterestForm, ExperienceForm
 
 def show_main(request):
     context = {
@@ -15,24 +15,40 @@ def show_main(request):
     return render(request, "index.html", context)
 
 def show_experience(request):
-    context = {
-        "name": "Fauzan Taqiy Santosa",
-        "experience_list": Experience.objects.all(),
-    }
-    return render(request, "experience.html", context)
-
-def show_interest(request):
     # 1. Panggil fungsi API JSON yang sudah difilter
-    json_response = show_json(request)
+    json_response = show_json_experience(request)
     
     # 2. Deserialize (Ubah) format JSON kembali ke bentuk objek Python
-    interests = serializers.deserialize(
+    deserialized_data = serializers.deserialize(
         "json",
         json_response.content.decode("utf-8"),
     )
     
     # 3. Ekstrak isi objek aslinya dari hasil deserialisasi
-    interests = [interest.object for interest in interests]
+    experiences = [experience.object for experience in deserialized_data]
+    
+    # 4. Ambil query pencarian untuk dikembalikan ke template
+    title_query = request.GET.get("title", "").strip()
+    
+    context = {
+        "name": "Fauzan Taqiy Santosa",
+        "experience_list": experiences,
+        "title_query": title_query,
+    }
+    return render(request, "experience.html", context)
+
+def show_interest(request):
+    # 1. Panggil fungsi API JSON yang sudah difilter
+    json_response = show_json_interest(request)
+    
+    # 2. Deserialize (Ubah) format JSON kembali ke bentuk objek Python
+    deserialized_data = serializers.deserialize(
+        "json",
+        json_response.content.decode("utf-8"),
+    )
+    
+    # 3. Ekstrak isi objek aslinya dari hasil deserialisasi
+    interests = [interest.object for interest in deserialized_data]
     
     # 4. Ambil query pencarian untuk dikembalikan ke template
     title_query = request.GET.get("title", "").strip()
@@ -43,6 +59,20 @@ def show_interest(request):
         "title_query": title_query,
     }
     return render(request, "interest.html", context)
+
+def create_experience(request):
+    form = ExperienceForm(request.POST or None)
+
+    if request.method == "POST" and form.is_valid():
+        form.save()
+        messages.success(request, "Pengalaman baru berhasil ditambahkan!")
+        return redirect("main:show_experience")
+
+    context = {
+        "name": "Fauzan Taqiy Santosa",
+        "form": form,
+    }
+    return render(request, "experience_form.html", context)
 
 def create_interest(request):
     form = InterestForm(request.POST or None)
@@ -58,7 +88,7 @@ def create_interest(request):
     }
     return render(request, "interest_form.html", context)
 
-def show_json(request):
+def show_json_interest(request):
     # Mengambil query pencarian 'title' dari URL
     title_query = request.GET.get("title", "").strip()
     
@@ -70,9 +100,28 @@ def show_json(request):
         
     return HttpResponse(serializers.serialize("json", data), content_type="application/json")
 
-def show_xml(request):
+def show_json_experience(request):
+    # Mengambil query pencarian 'title' dari URL
+    title_query = request.GET.get("title", "").strip()
+    
+    # Melakukan filter data jika ada kata kunci yang dicari
+    if title_query:
+        data = Experience.objects.filter(title__icontains=title_query)
+    else:
+        data = Experience.objects.all()
+        
+    return HttpResponse(serializers.serialize("json", data), content_type="application/json")
+
+def show_xml_interest(request):
     # Mengambil semua data dari model Interest
     data = Interest.objects.all()
+    
+    # Mengubah data menjadi format XML dan mengembalikannya
+    return HttpResponse(serializers.serialize("xml", data), content_type="application/xml")
+
+def show_xml_experience(request):
+    # Mengambil semua data dari model Interest
+    data = Experience.objects.all()
     
     # Mengubah data menjadi format XML dan mengembalikannya
     return HttpResponse(serializers.serialize("xml", data), content_type="application/xml")
@@ -86,3 +135,13 @@ def delete_interest(request, interest_id):
         return redirect("main:show_interest")
 
     return redirect("main:show_interest")
+
+def delete_experience(request, experience_id):
+    experience = get_object_or_404(Experience, pk=experience_id)
+
+    if request.method == "POST":
+        experience.delete()
+        messages.success(request, "Pengalaman berhasil dihapus!")
+        return redirect("main:show_experience")
+
+    return redirect("main:show_experience")

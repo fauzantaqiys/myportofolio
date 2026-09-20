@@ -17,7 +17,7 @@
                     </a>
                 </div>
                 
-                <form method="GET" class="interest-search">
+                <form method="GET" action="{% url 'main:show_interest' %}" class="interest-search">
                     <input type="text" name="title" value="{{ title_query }}" placeholder="Cari kesenangan berdasarkan judul..." class="interest-search__input">
                     <button type="submit" class="button">Cari</button>
                 </form>
