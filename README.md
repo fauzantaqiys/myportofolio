@@ -99,3 +99,38 @@ Dalam pengerjaan Tugas 3 ini, saya menggunakan bantuan AI (Gemini) sebagai rekan
 
 - https://share.gemini.google/dhy5nsoOBwts
 - https://share.google/aimode/C8ykyD7AQfdmC34fQ
+
+## Tugas 4
+
+### 1. Authentication, Session, Cookies, dan Authorization
+
+Pada Tugas 4, saya melanjutkan website portofolio dengan menerapkan sistem autentikasi menggunakan sistem bawaan Django. Pengguna dapat melakukan register, login, dan logout. Website juga menyimpan informasi `last_login` menggunakan cookie.
+
+Selain autentikasi, saya menerapkan authorization menggunakan Django Group dengan membuat role `Editor`. Terdapat empat jenis hak akses, yaitu pengunjung tanpa login, pengguna biasa, Editor, dan superuser.
+
+- Pengunjung tanpa login dapat melihat data portofolio tetapi harus login untuk melakukan aksi yang membutuhkan akun.
+- Pengguna biasa dapat memberikan atau membatalkan star, tetapi tidak dapat membuat, mengubah, atau menghapus data.
+- Editor dapat memberikan atau membatalkan star serta mengubah data, tetapi tidak dapat membuat atau menghapus data.
+- Superuser dapat membuat, mengubah, menghapus data, serta memberikan atau membatalkan star.
+
+Pengecekan hak akses diterapkan pada sisi server menggunakan authentication check, group membership, dan permission check. Tombol aksi pada template juga disesuaikan dengan hak akses pengguna.
+
+### 2. Fitur Star
+
+Saya menambahkan relasi `ManyToManyField` antara model `Experience` dan `User`, serta antara model `Interest` dan `User`. Fitur star menggunakan request `POST` dan `{% csrf_token %}` untuk menjaga keamanan request.
+
+Setiap pengguna hanya dapat memiliki satu star pada setiap data. Jika pengguna menekan tombol star kembali, star akan dibatalkan. Website juga menampilkan jumlah total star dan status apakah pengguna yang sedang login telah memberikan star.
+
+### 3. AI Disclosure & Reflection
+
+Dalam pengerjaan Tugas 4 ini, saya menggunakan bantuan AI sebagai rekan diskusi, debugging, dan validasi implementasi authentication, authorization, Django Group, session, cookie, serta fitur star.
+
+AI digunakan untuk membantu menganalisis struktur kode, menemukan kemungkinan masalah pada pembatasan akses di sisi server, serta mendiskusikan implementasi fitur berdasarkan requirement tugas. Kode yang digunakan kemudian saya sesuaikan dengan struktur proyek, uji secara mandiri, dan perbaiki berdasarkan hasil testing.
+
+Bagian yang dibantu AI meliputi:
+- Pemeriksaan hak akses berdasarkan status login dan role Editor.
+- Implementasi pembatasan create, update, dan delete pada view.
+- Implementasi toggle star menggunakan ManyToManyField.
+- Pemeriksaan penggunaan POST dan CSRF pada fitur star.
+- Penyesuaian template agar tombol aksi hanya muncul kepada pengguna yang berhak.
+- Pengecekan endpoint API agar tidak mengekspos informasi yang tidak diperlukan.

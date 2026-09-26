@@ -41,12 +41,14 @@
 
                             {% include "components/interest_star.html" with interest=interest %}
 
-                            {% if user.is_superuser %}
+                            {% if user.is_superuser or is_editor %}
                                 <div style="display: flex; gap: 10px; margin-top: 15px;">
                                     <a href="{% url 'main:edit_interest' interest.id %}" class="button button-secondary">Edit</a>
-                                    {% include "components/interest_delete_modal.html" with interest=interest %}
+                                    {% if user.is_superuser %}
+                                        {% include "components/interest_delete_modal.html" with interest=interest %}
+                                    {% endif %}
                                 </div>
-                            {% endif %}  
+                            {% endif %}
                         </article>
                     {% empty %}
                         <p class="empty-state">
