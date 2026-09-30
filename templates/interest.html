@@ -12,51 +12,379 @@
                 <div class="interest-header">
                     <h1>Interest</h1>
                     {% if user.is_superuser %}
-                        <a href="{% url 'main:create_interest' %}" class="button interest-add-button">
+                        <button
+                            type="button"
+                            class="button interest-add-button"
+                            popovertarget="add-interest-modal"
+                        >
                             <span aria-hidden="true">+</span>
                             Tambah Kesenangan
-                        </a>
+                        </button>
                     {% endif %}
                 </div>
                 
-                <form method="GET" action="{% url 'main:show_interest' %}" class="interest-search">
-                    <input type="text" name="title" value="{{ title_query }}" placeholder="Cari kesenangan berdasarkan judul..." class="interest-search__input">
+                <form id="interest-search-form" class="interest-search">
+                    <input
+                        type="search"
+                        id="search-input"
+                        name="title"
+                        value="{{ title_query }}"
+                        placeholder="Cari kesenangan berdasarkan judul..."
+                        class="interest-search__input"
+                        aria-label="Cari kesenangan berdasarkan judul"
+                    >
                     <button type="submit" class="button">Cari</button>
                 </form>
-                
-                <div class="interest-grid">
-                    {% for interest in interest_list %}
-                        <article class="interest-card">
-                            {% if interest.thumbnail %}
-                                <img src="{{ interest.thumbnail }}" alt="Gambar {{ interest.title }}" class="interest-image">
-                            {% endif %}
 
-                            <span class="interest-category">
-                                {{ interest.get_category_display }}
-                            </span>
-                            <h2>{{ interest.title }}</h2>
-                            <p class="interest-description">
-                                {{ interest.description }}
-                            </p>
-
-                            {% include "components/interest_star.html" with interest=interest %}
-
-                            {% if user.is_superuser or is_editor %}
-                                <div style="display: flex; gap: 10px; margin-top: 15px;">
-                                    <a href="{% url 'main:edit_interest' interest.id %}" class="button button-secondary">Edit</a>
-                                    {% if user.is_superuser %}
-                                        {% include "components/interest_delete_modal.html" with interest=interest %}
-                                    {% endif %}
-                                </div>
-                            {% endif %}
-                        </article>
-                    {% empty %}
-                        <p class="empty-state">
-                            Belum ada kesenangan yang ditambahkan.
-                        </p>
-                    {% endfor %}
+                <div id="loading" class="empty-state hide">
+                    <p>Memuat kesenangan...</p>
                 </div>
+
+                <div id="error" class="empty-state hide">
+                    <p>Gagal memuat data kesenangan. Silakan coba lagi.</p>
+                </div>
+
+                <div id="empty" class="empty-state hide">
+                    <p>Belum ada kesenangan yang ditambahkan atau ditemukan.</p>
+                </div>
+
+                <div id="grid" class="interest-grid hide"></div>
             </div>
         </section>
     </main>
+
+    {% if user.is_superuser %}
+        {% include "components/interest_form_modal.html" %}
+    {% endif %}
+
+    <script>
+        const BASE_INTERESTS_ENDPOINT = "{% url 'main:show_json_interest' %}";
+
+        let interestsAbortController;
+
+        const loadingState = document.getElementById('loading');
+        const errorState = document.getElementById('error');
+        const emptyState = document.getElementById('empty');
+        const gridContainer = document.getElementById('grid');
+        const searchForm = document.getElementById('interest-search-form');
+        const searchInput = document.getElementById('search-input');
+
+        const SEARCH_DEBOUNCE_DELAY = 300;
+        let searchDebounceTimer;
+
+        function displayPageSection({
+            showLoading = false,
+            showError = false,
+            showEmpty = false,
+            showGrid = false
+        }) {
+            loadingState.classList.toggle('hide', !showLoading);
+            errorState.classList.toggle('hide', !showError);
+            emptyState.classList.toggle('hide', !showEmpty);
+            gridContainer.classList.toggle('hide', !showGrid);
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replaceAll('&', '&amp;')
+                .replaceAll('<', '&lt;')
+                .replaceAll('>', '&gt;')
+                .replaceAll('"', '&quot;')
+                .replaceAll("'", '&#39;');
+        }
+
+        function buildInterestCardElement(item) {
+            const interest = item.fields;
+            const interestId = item.pk;
+
+            const articleElement = document.createElement('article');
+            articleElement.className = 'interest-card';
+
+            const imageHtml = interest.thumbnail
+                ? `
+                    <img
+                        src="${escapeHtml(interest.thumbnail)}"
+                        alt="Gambar ${escapeHtml(interest.title)}"
+                        class="interest-image"
+                    >
+                `
+                : '';
+
+            const isStarredClass = interest.is_starred
+                ? ' is-starred'
+                : '';
+
+            const starText = interest.is_starred
+                ? 'Unstar'
+                : 'Star';
+
+            const starTitle = interest.star_count > 0
+                ? `Dibintangi oleh ${escapeHtml(interest.starred_by_names)}`
+                : 'Jadilah yang pertama memberi star';
+
+            const starUrl = "{% url 'main:toggle_star_interest' '00000000-0000-0000-0000-000000000000' %}"
+                .replace(
+                    '00000000-0000-0000-0000-000000000000',
+                    interestId
+                );
+
+            const deleteUrl = "{% url 'main:delete_interest' '00000000-0000-0000-0000-000000000000' %}"
+                .replace(
+                    '00000000-0000-0000-0000-000000000000',
+                    interestId
+                );
+
+            const editUrl = "{% url 'main:edit_interest' '00000000-0000-0000-0000-000000000000' %}"
+                .replace(
+                    '00000000-0000-0000-0000-000000000000',
+                    interestId
+                );
+
+            const deleteHtml = "{{ user.is_superuser|yesno:'true,false' }}" === "true"
+                ? `
+                    <form
+                        method="post"
+                        action="${deleteUrl}"
+                        style="display:inline;"
+                    >
+                        {% csrf_token %}
+                        <button
+                            type="submit"
+                            class="button button-danger"
+                            onclick="return confirm('Yakin ingin menghapus kesenangan ini?');"
+                        >
+                            Hapus
+                        </button>
+                    </form>
+                `
+                : '';
+
+            const editHtml = `
+                {% if user.is_superuser or is_editor %}
+                    <a
+                        href="${editUrl}"
+                        class="button button-secondary"
+                    >
+                        Edit
+                    </a>
+                {% endif %}
+            `;
+
+            articleElement.innerHTML = `
+                ${imageHtml}
+
+                <span class="interest-category">
+                    ${escapeHtml(interest.category_display)}
+                </span>
+
+                <h2>${escapeHtml(interest.title)}</h2>
+
+                <p class="interest-description">
+                    ${escapeHtml(interest.description)}
+                </p>
+
+                <div class="project-card-actions">
+                    <div class="project-actions">
+
+                        <form
+                            method="post"
+                            action="${starUrl}"
+                            class="star-form"
+                        >
+                            {% csrf_token %}
+
+                            <button
+                                type="submit"
+                                class="button button-star${isStarredClass}"
+                                title="${starTitle}"
+                            >
+                                ★
+                                ${starText}
+                                <span class="star-count">
+                                    ${interest.star_count}
+                                </span>
+                            </button>
+                        </form>
+
+                        ${editHtml}
+                        ${deleteHtml}
+
+                    </div>
+                </div>
+            `;
+
+            return articleElement;
+        }
+
+        async function fetchInterests(searchQuery = '') {
+            if (interestsAbortController) {
+                interestsAbortController.abort();
+            }
+
+            interestsAbortController = new AbortController();
+
+            try {
+                displayPageSection({ showLoading: true });
+
+                const url = searchQuery
+                    ? `${BASE_INTERESTS_ENDPOINT}?title=${encodeURIComponent(searchQuery)}`
+                    : BASE_INTERESTS_ENDPOINT;
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Accept': 'application/json'
+                    },
+                    signal: interestsAbortController.signal
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch data');
+                }
+
+                const interestData = await response.json();
+
+                if (interestData.length === 0) {
+                    displayPageSection({ showEmpty: true });
+                } else {
+                    gridContainer.innerHTML = '';
+
+                    interestData.forEach(item => {
+                        gridContainer.appendChild(
+                            buildInterestCardElement(item)
+                        );
+                    });
+
+                    displayPageSection({ showGrid: true });
+                }
+
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    return;
+                }
+
+                console.error('Error loading interests:', error);
+                displayPageSection({ showError: true });
+            }
+        }
+
+        function closeInterestModal() {
+            document.getElementById("add-interest-modal").hidePopover();
+        }
+
+        function searchInterests() {
+            fetchInterests(searchInput.value.trim());
+        }
+
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchDebounceTimer);
+
+            searchDebounceTimer = setTimeout(function() {
+                searchInterests();
+            }, SEARCH_DEBOUNCE_DELAY);
+        });
+
+        searchForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+
+            clearTimeout(searchDebounceTimer);
+            searchInterests();
+        });
+
+        const CREATE_INTEREST_ENDPOINT = "{% url 'main:create_interest_ajax' %}";
+        const interestForm = document.getElementById("interest-form");
+
+        // Membaca nilai cookie untuk token CSRF
+        function getCookie(name) {
+            let cookieValue = null;
+
+            if (document.cookie && document.cookie !== "") {
+                const cookies = document.cookie.split(";");
+
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+
+                    if (
+                        cookie.substring(0, name.length + 1) ===
+                        name + "="
+                    ) {
+                        cookieValue = decodeURIComponent(
+                            cookie.substring(name.length + 1)
+                        );
+                        break;
+                    }
+                }
+            }
+
+            return cookieValue;
+        }
+
+        // Mengirim form tambah interest dengan AJAX
+        async function addInterest(event) {
+            event.preventDefault();
+
+            const submitButton = interestForm.querySelector(
+                'button[type="submit"]'
+            );
+
+            submitButton.disabled = true;
+
+            try {
+                const response = await fetch(CREATE_INTEREST_ENDPOINT, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": getCookie("csrftoken"),
+                    },
+                    body: new FormData(interestForm),
+                });
+
+                const result = await response.json().catch(() => ({}));
+
+                if (response.ok) {
+                    interestForm.reset();
+                    closeInterestModal();
+
+                    showToast(
+                        "Berhasil",
+                        "Kesenangan baru berhasil ditambahkan!",
+                        "success"
+                    );
+
+                    fetchInterests(searchInput.value.trim());
+                } else {
+                    const errorMessages = result.errors
+                        ? Object.values(result.errors)
+                            .flat()
+                            .map(error => error.message)
+                        : [
+                            result.message ||
+                            `Terjadi kesalahan (status ${response.status}).`
+                        ];
+
+                    showToast(
+                        "Gagal menambahkan kesenangan",
+                        errorMessages.join(" "),
+                        "error"
+                    );
+                }
+            } catch (error) {
+                console.error("Error adding interest:", error);
+
+                showToast(
+                    "Gagal menambahkan kesenangan",
+                    "Tidak dapat terhubung ke server. Silakan coba lagi.",
+                    "error"
+                );
+            } finally {
+                submitButton.disabled = false;
+            }
+        }
+
+        if (interestForm) {
+            interestForm.addEventListener("submit", addInterest);
+        }
+
+        fetchInterests(searchInput.value.trim());
+
+        fetchInterests(searchInput.value.trim());
+    </script>
 {% endblock content %}

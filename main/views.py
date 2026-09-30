@@ -5,7 +5,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import login, logout
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
-from django.http import HttpResponse, HttpResponseNotAllowed
+from django.http import HttpResponse, HttpResponseNotAllowed, JsonResponse
+from django.views.decorators.http import require_POST
 from django.core import serializers
 from main.models import Experience, Interest
 from main.forms import InterestForm, ExperienceForm
@@ -41,32 +42,19 @@ def show_experience(request):
         "title_query": title_query,
         "is_editor": is_editor(request.user),
     }
+
     return render(request, "experience.html", context)
 
 def show_interest(request):
-    json_response = show_json_interest(request)
-
-    deserialized_data = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-
-    interests = [interest.object for interest in deserialized_data]
     title_query = request.GET.get("title", "").strip()
 
     context = {
         "name": "Fauzan Taqiy Santosa",
-        "interest_list": interests,
         "title_query": title_query,
         "is_editor": is_editor(request.user),
+        "form": InterestForm(),
     }
-    return render(request, "interest.html", context)
-    
-    context = {
-        "name": "Fauzan Taqiy Santosa",
-        "interest_list": interests,
-        "title_query": title_query,
-    }
+
     return render(request, "interest.html", context)
 
 @login_required(login_url="/login/")
@@ -105,31 +93,80 @@ def create_interest(request):
     }
     return render(request, "interest_form.html", context)
 
+@require_POST
+def create_interest_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {
+                "message": "Hanya pemilik portofolio yang dapat menambahkan kesenangan."
+            },
+            status=403,
+        )
+
+    form = InterestForm(request.POST)
+
+    if form.is_valid():
+        interest = form.save()
+
+        return JsonResponse(
+            {
+                "message": "Kesenangan berhasil ditambahkan.",
+                "pk": str(interest.id),
+            },
+            status=201,
+        )
+
+    return JsonResponse(
+        {
+            "errors": form.errors.get_json_data()
+        },
+        status=400,
+    )
+
 def show_json_interest(request):
     title_query = request.GET.get("title", "").strip()
-    
+    interests = Interest.objects.prefetch_related("starred_by").all()
+
     if title_query:
-        data = Interest.objects.filter(title__icontains=title_query)
-    else:
-        data = Interest.objects.all()
-        
-    return HttpResponse(
-        serializers.serialize(
-            "json",
-            data,
-            use_natural_foreign_keys=True,
-        ),
-        content_type="application/json"
-    )
+        interests = interests.filter(title__icontains=title_query)
+
+    data = []
+
+    for interest in interests:
+        starred_users = interest.starred_by.all()
+        is_starred = (
+            request.user in starred_users
+            if request.user.is_authenticated
+            else False
+        )
+        starred_by_names = ", ".join(
+            [u.username for u in starred_users]
+        )
+
+        data.append({
+            "pk": str(interest.id),
+            "fields": {
+                "title": interest.title,
+                "description": interest.description,
+                "category": interest.category,
+                "category_display": interest.get_category_display(),
+                "thumbnail": interest.thumbnail,
+                "star_count": starred_users.count(),
+                "is_starred": is_starred,
+                "starred_by_names": starred_by_names,
+            }
+        })
+
+    return JsonResponse(data, safe=False)
 
 def show_json_experience(request):
     title_query = request.GET.get("title", "").strip()
-    
+
     if title_query:
         data = Experience.objects.filter(title__icontains=title_query)
     else:
         data = Experience.objects.all()
-        
+
     return HttpResponse(
         serializers.serialize(
             "json",
