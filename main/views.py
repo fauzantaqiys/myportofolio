@@ -26,21 +26,13 @@ def show_main(request):
     return render(request, "index.html", context)
 
 def show_experience(request):
-    json_response = show_json_experience(request)
-
-    deserialized_data = serializers.deserialize(
-        "json",
-        json_response.content.decode("utf-8"),
-    )
-
-    experiences = [experience.object for experience in deserialized_data]
     title_query = request.GET.get("title", "").strip()
 
     context = {
         "name": "Fauzan Taqiy Santosa",
-        "experience_list": experiences,
         "title_query": title_query,
         "is_editor": is_editor(request.user),
+        "form": ExperienceForm(),
     }
 
     return render(request, "experience.html", context)
@@ -74,6 +66,36 @@ def create_experience(request):
         "form": form,
     }
     return render(request, "experience_form.html", context)
+
+@require_POST
+def create_experience_ajax(request):
+    if not request.user.is_superuser:
+        return JsonResponse(
+            {
+                "message": "Hanya pemilik portofolio yang dapat menambahkan pengalaman."
+            },
+            status=403,
+        )
+
+    form = ExperienceForm(request.POST)
+
+    if form.is_valid():
+        experience = form.save()
+
+        return JsonResponse(
+            {
+                "message": "Pengalaman berhasil ditambahkan.",
+                "pk": str(experience.id),
+            },
+            status=201,
+        )
+
+    return JsonResponse(
+        {
+            "errors": form.errors.get_json_data()
+        },
+        status=400,
+    )
 
 @login_required(login_url="/login/")
 def create_interest(request):
@@ -162,19 +184,46 @@ def show_json_interest(request):
 def show_json_experience(request):
     title_query = request.GET.get("title", "").strip()
 
-    if title_query:
-        data = Experience.objects.filter(title__icontains=title_query)
-    else:
-        data = Experience.objects.all()
+    experiences = Experience.objects.prefetch_related("starred_by").all()
 
-    return HttpResponse(
-        serializers.serialize(
-            "json",
-            data,
-            use_natural_foreign_keys=True,
-        ),
-        content_type="application/json"
-    )
+    if title_query:
+        experiences = experiences.filter(title__icontains=title_query)
+
+    data = []
+
+    for experience in experiences:
+        starred_users = experience.starred_by.all()
+
+        is_starred = (
+            request.user in starred_users
+            if request.user.is_authenticated
+            else False
+        )
+
+        starred_by_names = ", ".join(
+            [u.username for u in starred_users]
+        )
+
+        data.append(
+            {
+                "pk": str(experience.id),
+                "fields": {
+                    "title": experience.title,
+                    "description": experience.description,
+                    "thumbnail": experience.thumbnail,
+                    "category": experience.category,
+                    "category_display": experience.get_category_display(),
+                    "started_at": experience.started_at,
+                    "ended_at": experience.ended_at,
+                    "is_ongoing": experience.is_ongoing,
+                    "star_count": starred_users.count(),
+                    "is_starred": is_starred,
+                    "starred_by_names": starred_by_names,
+                },
+            }
+        )
+
+    return JsonResponse(data, safe=False)
 
 def show_xml_interest(request):
     # Mengambil semua data dari model Interest

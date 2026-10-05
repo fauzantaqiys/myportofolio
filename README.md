@@ -134,3 +134,17 @@ Bagian yang dibantu AI meliputi:
 - Pemeriksaan penggunaan POST dan CSRF pada fitur star.
 - Penyesuaian template agar tombol aksi hanya muncul kepada pengguna yang berhak.
 - Pengecekan endpoint API agar tidak mengekspos informasi yang tidak diperlukan.
+
+### Tugas 5
+
+1. Debouncing adalah teknik untuk menunda pengiriman request sampai pengguna berhenti melakukan suatu aksi selama waktu tertentu. Pada fitur pencarian AJAX, debouncing penting agar setiap ketikan tidak langsung menghasilkan request ke server. Dengan begitu jumlah request menjadi lebih sedikit dan pencarian terasa lebih efisien.
+
+2. `await` digunakan untuk menunggu Promise dari `fetch()` selesai sebelum kode berikutnya dijalankan. Dengan `await`, kita dapat menerima `Response` dari server terlebih dahulu lalu membaca data JSON-nya. Jika tidak menggunakan `await`, nilai yang diperoleh masih berupa Promise sehingga kode berikutnya dapat berjalan sebelum proses request selesai dan hasil response belum tersedia.
+
+3. XSS (Cross-Site Scripting) adalah serangan ketika data yang mengandung kode berbahaya berhasil ditampilkan sebagai HTML atau JavaScript di browser pengguna. Data yang ditampilkan melalui AJAX lebih rentan ketika JavaScript menggunakan `innerHTML` karena data JSON dimasukkan langsung ke HTML tanpa otomatis mendapatkan escaping dari template Django. Karena itu, setiap nilai yang berasal dari JSON harus di-escape sebelum dimasukkan ke HTML. Pada proyek ini, perlindungan juga ditambah di sisi server menggunakan `strip_tags()` pada `clean_<field>` di ModelForm.
+
+### AI Disclosure
+
+Dalam pengerjaan proyek ini, saya menggunakan ChatGPT sebagai alat bantu belajar dan debugging. AI digunakan untuk membantu memahami instruksi Tutorial 05 dan Individual Assignment 5, menjelaskan konsep JavaScript, AJAX, Fetch API, debouncing, CSRF, dan XSS, serta membantu menyesuaikan contoh tutorial dengan struktur project saya.
+
+Pada Individual Assignment 5, implementasi diterapkan pada bagian Experience, bukan Projects yang digunakan sebagai contoh pada tutorial. Saya tetap melakukan penyesuaian kode secara manual agar sesuai dengan model, form, URL, hak akses, dan struktur template pada project saya, serta melakukan pengujian ulang pada local development environment.
