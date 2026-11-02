@@ -45,3 +45,7 @@ venv.bak/
 .idea/
 .vscode/
 .DS_Store
+
+# Local course references
+tutorial/
+tugas/

@@ -43,26 +43,37 @@ class MainTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "experience.html")
-        self.assertContains(response, self.experience.title)
-        self.assertContains(response, self.experience.description)
-        self.assertContains(response, "Part-Time")
-        self.assertContains(response, "Sedang berlangsung")
         self.assertContains(response, f'href="{reverse("main:show_main")}"')
+
+        # Verifikasi data experience tersedia melalui endpoint API
+        api_response = self.client.get(reverse("api:experience-list"))
+        self.assertEqual(api_response.status_code, 200)
+        self.assertContains(api_response, self.experience.title)
+        self.assertContains(api_response, self.experience.description)
 
     def test_empty_experience_page(self):
         Experience.objects.all().delete()
         response = self.client.get(reverse("main:show_experience"))
 
-        self.assertContains(response, "Belum ada pengalaman yang ditambahkan.")
+        self.assertContains(
+            response, "Belum ada pengalaman yang ditambahkan atau ditemukan."
+        )
+
+        api_response = self.client.get(reverse("api:experience-list"))
+        self.assertEqual(api_response.status_code, 200)
+        self.assertEqual(api_response.json(), [])
 
     def test_completed_experience(self):
         self.experience.ended_at = timezone.now()
         self.experience.save()
-        response = self.client.get(reverse("main:show_experience"))
 
         self.assertFalse(self.experience.is_ongoing)
-        self.assertContains(response, "Selesai")
-        self.assertNotContains(response, "Sedang berlangsung")
+
+        api_response = self.client.get(
+            reverse("api:experience-detail", args=[self.experience.id])
+        )
+        self.assertEqual(api_response.status_code, 200)
+        self.assertFalse(api_response.json()["is_ongoing"])
 
     def test_interest_model(self):
         self.assertEqual(str(self.interest), "Pergi ke taman")
@@ -73,13 +84,22 @@ class MainTest(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(response, "interest.html")
-        self.assertContains(response, self.interest.title)
-        self.assertContains(response, self.interest.description)
-        self.assertContains(response, "Activity")
         self.assertContains(response, f'href="{reverse("main:show_main")}"')
+
+        # Verifikasi data interest tersedia melalui endpoint JSON
+        api_response = self.client.get(reverse("main:show_json_interest"))
+        self.assertEqual(api_response.status_code, 200)
+        self.assertContains(api_response, self.interest.title)
+        self.assertContains(api_response, self.interest.description)
 
     def test_empty_interest_page(self):
         Interest.objects.all().delete()
         response = self.client.get(reverse("main:show_interest"))
 
-        self.assertContains(response, "Belum ada kesenangan yang ditambahkan.")
+        self.assertContains(
+            response, "Belum ada kesenangan yang ditambahkan atau ditemukan."
+        )
+
+        api_response = self.client.get(reverse("main:show_json_interest"))
+        self.assertEqual(api_response.status_code, 200)
+        self.assertEqual(api_response.json(), [])
