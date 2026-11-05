@@ -1,0 +1,91 @@
+<div
+    id="edit-interest-modal"
+    class="interest-form-modal"
+    popover="auto"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="edit-interest-modal-title"
+>
+    <button
+        type="button"
+        class="interest-form-modal__backdrop"
+        popovertarget="edit-interest-modal"
+        popovertargetaction="hide"
+        aria-label="Tutup form edit kesenangan"
+    ></button>
+
+    <div class="interest-form-modal__content">
+        <button
+            type="button"
+            class="interest-form-modal__close"
+            popovertarget="edit-interest-modal"
+            popovertargetaction="hide"
+            aria-label="Tutup form edit kesenangan"
+        >
+            &times;
+        </button>
+
+        <h2 id="edit-interest-modal-title">
+            Edit Kesenangan
+        </h2>
+
+        <form id="interest-edit-form" class="interest-form">
+            <input type="hidden" id="edit-interest-id" name="id">
+
+            <div class="form-group">
+                <label for="edit-interest-title">Judul</label>
+                <input
+                    type="text"
+                    id="edit-interest-title"
+                    name="title"
+                    required
+                    maxlength="255"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="edit-interest-category">Kategori</label>
+                <select id="edit-interest-category" name="category" required>
+                    <option value="activity">Activity</option>
+                    <option value="music">Music</option>
+                    <option value="film">Film</option>
+                    <option value="place">Place</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="edit-interest-thumbnail">URL Thumbnail</label>
+                <input
+                    type="url"
+                    id="edit-interest-thumbnail"
+                    name="thumbnail"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="edit-interest-description">Deskripsi</label>
+                <textarea
+                    id="edit-interest-description"
+                    name="description"
+                    rows="4"
+                    required
+                ></textarea>
+            </div>
+
+            <div class="interest-form-modal__actions">
+                <button
+                    type="button"
+                    class="button button-secondary"
+                    popovertarget="edit-interest-modal"
+                    popovertargetaction="hide"
+                >
+                    Batal
+                </button>
+
+                <button type="submit" class="button">
+                    Simpan Perubahan
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
